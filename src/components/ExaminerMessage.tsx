@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { parseReply, type ParsedReview, type ParsedSummary, type Score } from "@/lib/parse";
 import { Markdown } from "./Markdown";
 
@@ -154,8 +154,8 @@ function SummaryCard({ summary, streaming }: { summary: ParsedSummary; streaming
   );
 }
 
-/** 一条考官回复：考官提问 → 上一轮复盘 → （结束时）总结报告 */
-export function ExaminerMessage({ content, streaming = false }: { content: string; streaming?: boolean }) {
+/** 一条考官回复：考官提问 → 上一轮复盘 → （结束时）总结报告。memo：流式输出时历史消息不重复渲染 */
+export const ExaminerMessage = memo(function ExaminerMessage({ content, streaming = false }: { content: string; streaming?: boolean }) {
   const parsed = useMemo(() => parseReply(content), [content]);
   const questionStreaming = streaming && !parsed.review && !parsed.summary;
   const reviewStreaming = streaming && !parsed.summary;
@@ -187,4 +187,4 @@ export function ExaminerMessage({ content, streaming = false }: { content: strin
       ) : null}
     </div>
   );
-}
+});

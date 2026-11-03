@@ -63,6 +63,7 @@ export function SessionView({ id }: { id: string }) {
 
   const run = useCallback(
     async (action: ChatAction, base: PracticeSession) => {
+      autoStarted.current = true; // 任何一次生成开始后都不再自动开场，避免重复请求
       const controller = new AbortController();
       abortRef.current = controller;
       setError(null);
@@ -126,8 +127,7 @@ export function SessionView({ id }: { id: string }) {
   useEffect(() => {
     if (!session || session.messages.length > 0 || autoStarted.current) return;
     const timer = window.setTimeout(() => {
-      autoStarted.current = true;
-      void run("start", session);
+      if (!autoStarted.current) void run("start", session);
     }, 0);
     return () => window.clearTimeout(timer);
   }, [session, run]);
