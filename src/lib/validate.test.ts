@@ -93,3 +93,33 @@ describe("validateChatRequest", () => {
     expect(empty.ok).toBe(false);
   });
 });
+
+describe("questionIds", () => {
+  const civil = { scenarioId: "civil-service", language: "zh", totalQuestions: 2 };
+
+  it("accepts valid bank questions", () => {
+    const r = validateChatRequest({ action: "start", config: { ...civil, questionIds: ["cs-01", "cs-02"] }, messages: [] });
+    expect(r.ok && r.value.config.questionIds).toEqual(["cs-01", "cs-02"]);
+  });
+
+  it("rejects unknown, foreign, duplicate or miscounted ids", () => {
+    const bad = [
+      ["cs-01", "nope"],
+      ["cs-01", "fe-01"],
+      ["cs-01", "cs-01"],
+      ["cs-01"],
+    ];
+    for (const questionIds of bad) {
+      expect(validateChatRequest({ action: "start", config: { ...civil, questionIds }, messages: [] }).ok).toBe(false);
+    }
+  });
+
+  it("rejects bank questions on custom scenarios", () => {
+    const r = validateChatRequest({
+      action: "start",
+      config: { scenarioId: "custom", customTitle: "x", language: "zh", totalQuestions: 1, questionIds: ["cs-01"] },
+      messages: [],
+    });
+    expect(r.ok).toBe(false);
+  });
+});

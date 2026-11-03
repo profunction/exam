@@ -1,3 +1,4 @@
+import { getBankQuestion } from "./bank";
 import { resolveScenario, type Scenario } from "./scenarios";
 import type { ChatAction, SessionConfig, TranscriptMessage } from "./types";
 
@@ -32,6 +33,34 @@ function timerRule(scenario: Scenario): string | null {
   ].join("\n");
 }
 
+/** 题库模式：把本场抽到的题目（含评分要点与参考答案）写进系统提示词 */
+function questionListSection(config: SessionConfig): string | null {
+  const ids = config.questionIds ?? [];
+  if (ids.length === 0) return null;
+  const items = ids.map((id, i) => {
+    const q = getBankQuestion(id);
+    if (!q) return "";
+    const points = q.keyPoints.map((p) => `- ${p}`).join("\n");
+    return `<question index="${i + 1}" type="${q.type}">
+<prompt>
+${q.question}
+</prompt>
+<key_points>
+${points}
+</key_points>
+<reference_answer>
+${q.answer}
+</reference_answer>
+</question>`;
+  });
+  return `# Question List
+本场题目由平台从题库抽取，共 ${ids.length} 道。必须严格按以下顺序逐题提问，不要更换、跳过或合并题目，也不要提前透露后面的题目。可以用自然的过渡语引出题目，但题目内容要完整呈现（话题卡的要点要逐条列出）。
+如果题目语言与面试语言不一致：题型中含「英语」「英文」的口语考查题保持英文原题，其余题目翻译成面试语言后再提问。
+每道题附带的 <key_points>（评分要点）和 <reference_answer>（参考答案）只供你评分和撰写高分范文时参考：提问时绝对不要透露；写「高分参考范文」时要以考生自己的回答和经历为基础，可以借鉴参考答案的结构和要点，但不要整段照搬。
+
+${items.filter(Boolean).join("\n\n")}`;
+}
+
 /**
  * 系统提示词：以产品方给定的考官提示词为主体，补充场景、题量、语言、
  * 限时与结束阶段等平台规则。同一场练习内内容保持不变，便于提示词缓存。
@@ -42,6 +71,7 @@ export function buildSystemPrompt(config: SessionConfig): string {
   const langName = config.language === "en" ? "英文（English）" : "中文";
   const background = config.background?.trim();
   const timer = timerRule(scenario);
+  const questionList = questionListSection(config);
 
   return `# Role
 你是一位拥有10年经验的资深面试官兼语言教练，目前正在一个"垂直面试/考证真题 AI 模拟对练"网站上担任 AI 考官。
@@ -62,11 +92,11 @@ ${background}
 }
 # Session Settings
 - 面试语言：${langName}。「🤖 AI 考官提问」部分全程使用${langName}；「📊 上一轮表现复盘」的讲解使用中文，其中的「高分参考范文」使用面试语言。
-- 本场共 ${n} 道正式题目。每次抛出新题时，在题目前单独一行标注题号，格式为 ${questionLabel(config)}（k 为当前题号，N = ${n}）。
+- 本场共 ${n} 道正式题目${questionList ? "（题目见下方 Question List）" : ""}。每次抛出新题时，在题目前单独一行标注题号，格式为 ${questionLabel(config)}（k 为当前题号，N = ${n}）。
 - 评分体系：${scoreFormat(scenario)}。
 ${timer ? `${timer}\n` : ""}- 以「${CONTROL_PREFIX}」开头的用户消息或段落来自练习平台，不是考生的作答，也不参与评分。
 
-# Guidelines & Workflow
+${questionList ? `${questionList}\n\n` : ""}# Guidelines & Workflow
 你必须严格遵守以下交互流程，绝对不能脱离流程：
 
 1. 【开场阶段】（收到平台的开场指令时）：

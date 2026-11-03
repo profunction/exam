@@ -12,14 +12,16 @@
 
 | 功能 | 说明 |
 | --- | --- |
-| 8 个内置场景 | 外企高级前端 / 后端全栈 / 产品经理面试（英文），教师资格证结构化面试、公务员结构化面试（中文），雅思口语 Part 1 / 2 / 3 |
-| 自定义场景 | 输入场景名称和说明即可练习，例如考研复试、银行面试、托福口语 |
+| 13 个内置场景 | 外企前端 / 后端全栈 / 产品经理 / 通用行为面试（英文），银行国企校招面试，教师资格证、公务员、事业单位结构化面试，考研复试，雅思口语 Part 1 / 2 / 3，大学英语四六级口语 |
+| 真题题库 | 128 道原创仿真题，按真实考试题型编写，每题附评分要点和参考答案；`/bank` 可按场景、题型浏览，单题或随机抽题开练 |
+| 两种出题方式 | 「题库抽题」：可按题型筛选，考官按题库题目提问，并参照评分要点打分；「AI 考官出题」：按场景和背景即兴出题，题目不重样 |
+| 自定义场景 | 输入场景名称和说明即可练习，例如托福口语、医院规培面试 |
 | 个性化出题 | 开考前可填写个人背景（目标岗位、简历要点等），考官据此出题和追问 |
 | 限时作答 | 教资、考公、雅思场景自动计时（含准备时间），超时会在复盘中扣分 |
 | 语音作答 | 使用浏览器原生语音识别把口述转成文字（Chrome / Edge / Safari） |
 | 成绩曲线 | 侧栏展示每题得分折线与明细表，悬停或键盘左右键查看数值 |
 | 练习记录 | 保存在浏览器本地，可继续未完成的练习、回看报告 |
-| 演示模式 | 未配置 API Key 时自动启用，用固定示例跑通完整流程 |
+| 演示模式 | 未配置 API Key 时自动启用：按题库出题，范文使用题库参考答案，可完整跑通流程 |
 
 ## 快速开始
 
@@ -44,6 +46,43 @@ npm run dev
 | `ANTHROPIC_FALLBACKS` | 开启 | 模型因安全策略拒答时，由服务端自动换用推荐模型重试；设为 `off` 关闭 |
 | `MOCK_MODE` | 自动 | `1` 强制演示模式，`0` 强制调用模型 |
 | `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_SEC` | `30` / `600` | 每个 IP 在时间窗口内的最大请求数 |
+
+## 题库
+
+题目放在 `src/lib/bank/data/` 下，每个场景一个文件：
+
+```ts
+{
+  id: "cs-05",                 // 全局唯一
+  scenarioId: "civil-service", // 对应 scenarios.ts 中的场景
+  type: "应急应变",            // 题型，用于筛选和分组
+  difficulty: 1,               // 1 基础 / 2 进阶 / 3 挑战
+  question: "……",              // 题目（Markdown）
+  keyPoints: ["……", "……"],     // 评分要点
+  answer: `……`,                // 参考答案（Markdown）
+}
+```
+
+- 新增题目：在对应文件里追加一项即可，`npm test` 会检查 id 唯一、字段完整、场景存在等
+- 题目正文和答案只在服务端使用，浏览器端只拿到 id / 题型 / 难度的轻量索引
+- 用题库出题时，抽到的题目和评分要点、参考答案会写进系统提示词。考官按顺序提问，评分时参照要点，提问时不会透露答案
+- **版权**：现有题目全部为原创仿真题，不是官方考试原题。如果要导入外部题目，请先确认对方的开源许可（MIT、CC BY 等需按要求署名），官方真题和培训机构的题库通常受版权保护，不要直接搬运
+
+## 可以借助的开源项目
+
+| 项目 | 可以用来做什么 | 许可（使用前请再到仓库确认） |
+| --- | --- | --- |
+| [yangshun/front-end-interview-handbook](https://github.com/yangshun/front-end-interview-handbook) | 扩充外企前端面试题 | MIT |
+| [lydiahallie/javascript-questions](https://github.com/lydiahallie/javascript-questions)、[sudheerj/reactjs-interview-questions](https://github.com/sudheerj/reactjs-interview-questions) | JavaScript / React 题目与解析 | 第三方索引显示为 MIT |
+| [donnemartin/system-design-primer](https://github.com/donnemartin/system-design-primer) | 系统设计题素材 | CC BY 4.0（需署名） |
+| [jiajunhuang/interview](https://github.com/jiajunhuang/interview) | 后端面经素材 | CC BY 3.0（需署名） |
+| [ieltspeak](https://pypi.org/project/ieltspeak/) | 雅思口语话题分类素材 | MIT |
+| [FunAudioLLM/SenseVoice](https://huggingface.co/FunAudioLLM/SenseVoiceSmall)、FunASR | 自建中文 / 中英混合语音识别，替代浏览器语音识别 | 代码为开源许可，模型权重使用单独的模型许可，商用前请阅读 |
+| [speechocean762](https://openslr.org/101/) | 英语发音评测数据集，可用于做雅思发音打分 | CC BY 4.0 |
+| CosyVoice2、Kokoro 等 TTS | 让 AI 考官「开口说话」 | 二手资料称为 Apache 2.0，未核实 |
+| [Interviewa](https://github.com/sh78ba/Interviewa)、[adrianhajdin/ai_mock_interviews](https://github.com/adrianhajdin/ai_mock_interviews) | 参考同类 AI 模拟面试产品的语音面试、报告等设计 | 未核实 |
+
+公务员、事业单位、教资结构化面试和考研复试方面，目前没有找到可靠的开源题库，所以这部分题目都是原创的。
 
 ## 工作原理
 
@@ -94,12 +133,14 @@ src/
 ├── app/
 │   ├── page.tsx               首页：场景选择、练习记录
 │   ├── session/[id]/page.tsx  对练页
+│   ├── bank/                  题库总览与各场景题库页（静态生成）
 │   └── api/
 │       ├── chat/route.ts      Claude 流式接口（含演示模式）
 │       └── status/route.ts    返回当前是否为演示模式
 ├── components/                界面组件（考官消息、复盘卡片、成绩曲线、计时器、输入框……）
 └── lib/
     ├── scenarios.ts           场景配置（增删改场景只需改这里）
+    ├── bank/                  题库数据（data/）、索引与随机抽题
     ├── prompt.ts              系统提示词与消息组装
     ├── parse.ts               回复解析
     ├── validate.ts            请求校验
@@ -110,12 +151,12 @@ src/
 
 ## 新增或修改场景
 
-编辑 `src/lib/scenarios.ts` 中的 `SCENARIOS` 数组：`description` 和 `tone` 会写进系统提示词，`scoreScale` 决定百分制还是雅思分数档，`timer` 开启限时。可以顺手在 `src/lib/mock.ts` 的 `BANK` 中加几道演示题。
+编辑 `src/lib/scenarios.ts` 中的 `SCENARIOS` 数组：`description` 和 `tone` 会写进系统提示词，`scoreScale` 决定百分制还是雅思分数档，`timer` 开启限时。然后在 `src/lib/bank/data/` 中为新场景加一个题目文件，并在 `src/lib/bank/index.ts` 中注册（测试要求每个场景至少 8 道题）。
 
 ## 测试与构建
 
 ```bash
-npm test            # 单元测试：解析、提示词、校验、演示回复格式
+npm test            # 单元测试：解析、提示词、校验、演示回复格式、题库完整性
 npm run typecheck   # TypeScript 类型检查
 npm run build       # 生产构建
 npm start           # 启动生产服务

@@ -1,18 +1,9 @@
+import { getBankQuestion } from "./bank";
+import { LIMITS } from "./limits";
 import { CUSTOM_SCENARIO_ID, getScenario } from "./scenarios";
 import type { ChatAction, ChatRequestBody, Lang, SessionConfig, TranscriptMessage } from "./types";
 
-export const LIMITS = {
-  minQuestions: 1,
-  maxQuestions: 10,
-  backgroundChars: 2000,
-  customTitleChars: 60,
-  customDescriptionChars: 600,
-  userMessageChars: 6000,
-  assistantMessageChars: 16000,
-  /** 每题最多：一次作答 + 若干次非作答交流，留足余量 */
-  maxMessages: 80,
-  totalChars: 200_000,
-} as const;
+export { LIMITS };
 
 export type ValidationResult = { ok: true; value: ChatRequestBody } | { ok: false; error: string };
 
@@ -48,6 +39,9 @@ function validateConfig(raw: unknown): SessionConfig | Error {
   if (customDescription instanceof Error) return customDescription;
   if (scenarioId === CUSTOM_SCENARIO_ID && !customTitle?.trim()) return new Error("自定义场景需要填写场景名称");
 
+  const questionIds = validateQuestionIds(raw.questionIds, scenarioId, totalQuestions);
+  if (questionIds instanceof Error) return questionIds;
+
   const preset = getScenario(scenarioId);
   const lang: Lang = preset?.languageLocked ? preset.defaultLanguage : language;
   return {
@@ -56,7 +50,24 @@ function validateConfig(raw: unknown): SessionConfig | Error {
     totalQuestions,
     ...(background ? { background } : {}),
     ...(scenarioId === CUSTOM_SCENARIO_ID ? { customTitle, customDescription } : {}),
+    ...(questionIds ? { questionIds } : {}),
   };
+}
+
+/** 题库题目：必须存在、属于当前场景、不重复，且数量等于题目总数 */
+function validateQuestionIds(raw: unknown, scenarioId: string, totalQuestions: number): string[] | undefined | Error {
+  if (raw === undefined || raw === null) return undefined;
+  if (!Array.isArray(raw) || raw.length === 0) return new Error("题库题目格式错误");
+  if (raw.length !== totalQuestions) return new Error("题库题目数量与题目总数不一致");
+  const ids: string[] = [];
+  for (const id of raw) {
+    if (typeof id !== "string") return new Error("题库题目格式错误");
+    const q = getBankQuestion(id);
+    if (!q || q.scenarioId !== scenarioId) return new Error("题库中没有这道题，请重新开始练习");
+    if (ids.includes(id)) return new Error("题库题目重复");
+    ids.push(id);
+  }
+  return ids;
 }
 
 function validateMessages(raw: unknown): TranscriptMessage[] | Error {

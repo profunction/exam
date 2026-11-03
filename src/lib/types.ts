@@ -17,6 +17,8 @@ export interface SessionConfig {
   totalQuestions: number;
   /** 考生自述背景：目标岗位、简历要点等（可选） */
   background?: string;
+  /** 从题库抽取的题目 id（按提问顺序）；为空时由 AI 考官即兴出题 */
+  questionIds?: string[];
 }
 
 /** 发送给服务端的单条对话记录 */

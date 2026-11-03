@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type KeyboardEvent } from "react";
-import { LIMITS } from "@/lib/validate";
+import { LIMITS } from "@/lib/limits";
 import type { Lang } from "@/lib/types";
 import { useSpeechRecognition } from "./useSpeechRecognition";
 

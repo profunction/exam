@@ -41,3 +41,21 @@ describe("mockReply follows the output contract", () => {
     expect(r.review).toBeUndefined();
   });
 });
+
+describe("mockReply with bank questions", () => {
+  it("asks the picked questions and uses the bank reference answer", async () => {
+    const { getBankQuestion } = await import("./bank");
+    const config: SessionConfig = { scenarioId: "teacher-cert", language: "zh", totalQuestions: 2, questionIds: ["tc-05", "tc-09"] };
+    const opening = parseReply(mockReply(config, [], "start"));
+    expect(opening.question).toContain(getBankQuestion("tc-05")!.question);
+
+    const transcript: TranscriptMessage[] = [
+      { role: "assistant", content: mockReply(config, [], "start") },
+      { role: "user", content: "我会先让学生前倾捏住鼻翼，再安排同学送医务室。" },
+    ];
+    const next = parseReply(mockReply(config, transcript, "answer"));
+    expect(next.question).toContain(getBankQuestion("tc-09")!.question);
+    expect(next.review?.modelAnswer?.replace(/\s+/g, "")).toBe(getBankQuestion("tc-05")!.answer.replace(/\s+/g, ""));
+    expect(next.review?.corrections.some((c) => c.includes("本题评分要点"))).toBe(true);
+  });
+});

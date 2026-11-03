@@ -20,8 +20,8 @@ interface ErrorState {
 }
 
 function toConfig(s: PracticeSession): SessionConfig {
-  const { scenarioId, customTitle, customDescription, language, totalQuestions, background } = s;
-  return { scenarioId, customTitle, customDescription, language, totalQuestions, background };
+  const { scenarioId, customTitle, customDescription, language, totalQuestions, background, questionIds } = s;
+  return { scenarioId, customTitle, customDescription, language, totalQuestions, background, questionIds };
 }
 
 /** 去掉末尾的考官回复后，应该用哪个动作重新生成 */
@@ -393,7 +393,7 @@ export function SessionView({ id }: { id: string }) {
                     onClick={restart}
                     className="rounded-full bg-brand-600 px-5 py-2 text-sm font-medium text-white hover:bg-brand-700"
                   >
-                    同样设置再练一场
+                    {session.questionIds?.length ? "同样题目再练一遍" : "同样设置再练一场"}
                   </button>
                   <Link href="/" className="rounded-full border border-[var(--border)] px-5 py-2 text-sm font-medium hover:bg-[var(--surface-muted)]">
                     换个场景
@@ -459,6 +459,27 @@ export function SessionView({ id }: { id: string }) {
               </table>
             ) : null}
           </section>
+
+          {session.questionIds?.length ? (
+            <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+              <h2 className="text-sm font-semibold">本场题目来自题库</h2>
+              <p className="mt-1 text-xs text-[var(--ink-3)]">答完后可以对照评分要点和参考答案复盘。</p>
+              <ul className="mt-2 space-y-1 text-sm">
+                {session.questionIds.map((qid, i) => (
+                  <li key={qid}>
+                    <a
+                      href={`/bank/${session.scenarioId}#${qid}`}
+                      target="_blank"
+                      rel="noopener"
+                      className="text-brand-600 hover:underline"
+                    >
+                      第 {i + 1} 题参考答案 ↗
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
           <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
             <h2 className="mb-2 text-sm font-semibold">答题技巧</h2>

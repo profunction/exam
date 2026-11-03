@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import type { BankIndexItem } from "@/lib/bank/types";
 import { CATEGORY_LABELS, SCENARIOS, resolveScenario, type Scenario, type ScenarioCategory } from "@/lib/scenarios";
 import { collectScores } from "@/lib/scores";
 import { deleteSession, listSessions, newId, saveSession } from "@/lib/storage";
@@ -17,6 +18,7 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: "job", label: CATEGORY_LABELS.job },
   { id: "cert", label: CATEGORY_LABELS.cert },
   { id: "civil", label: CATEGORY_LABELS.civil },
+  { id: "study", label: CATEGORY_LABELS.study },
   { id: "language", label: CATEGORY_LABELS.language },
 ];
 
@@ -24,6 +26,7 @@ const FEATURES = [
   { icon: "🎯", title: "实时评分", text: "每答完一题立刻给分，雅思按官方分数档，其余按百分制。" },
   { icon: "🩺", title: "痛点纠错", text: "逐句指出语法、用词、逻辑和扣题问题，并给出修改建议。" },
   { icon: "📝", title: "高分范文", text: "基于你自己的回答润色出高分参考答案，一键复制背诵。" },
+  { icon: "📚", title: "真题题库", text: "按真实考试题型编写的原创仿真题，每题附评分要点和参考答案。" },
 ];
 
 function formatDate(ts: number) {
@@ -77,7 +80,7 @@ function HistoryItem({ session, onDelete }: { session: PracticeSession; onDelete
   );
 }
 
-function ScenarioCard({ scenario, onPick }: { scenario: Scenario; onPick: () => void }) {
+function ScenarioCard({ scenario, bankCount, onPick }: { scenario: Scenario; bankCount: number; onPick: () => void }) {
   return (
     <li>
       <button
@@ -99,6 +102,11 @@ function ScenarioCard({ scenario, onPick }: { scenario: Scenario; onPick: () => 
           <span className="rounded-md bg-brand-50 px-1.5 py-0.5 text-[11px] font-medium text-brand-700 dark:bg-brand-600/20 dark:text-brand-100">
             {scenario.defaultLanguage === "en" ? "English" : "中文"}
           </span>
+          {bankCount > 0 ? (
+            <span className="rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+              题库 {bankCount} 题
+            </span>
+          ) : null}
           {scenario.tags.map((tag) => (
             <span key={tag} className="rounded-md border border-[var(--border)] px-1.5 py-0.5 text-[11px] text-[var(--ink-2)]">
               {tag}
@@ -111,7 +119,7 @@ function ScenarioCard({ scenario, onPick }: { scenario: Scenario; onPick: () => 
   );
 }
 
-export function HomeView() {
+export function HomeView({ bankIndex }: { bankIndex: Record<string, BankIndexItem[]> }) {
   const router = useRouter();
   const mode = useServiceMode();
   const [filter, setFilter] = useState<Filter>("all");
@@ -124,6 +132,7 @@ export function HomeView() {
   }, []);
 
   const scenarios = useMemo(() => (filter === "all" ? SCENARIOS : SCENARIOS.filter((s) => s.category === filter)), [filter]);
+  const bankTotal = useMemo(() => Object.values(bankIndex).reduce((n, items) => n + items.length, 0), [bankIndex]);
 
   const start = (config: SessionConfig) => {
     const now = Date.now();
@@ -146,15 +155,20 @@ export function HomeView() {
           </span>
           <span className="font-semibold">AI 考官</span>
           <span className="hidden text-sm text-[var(--ink-3)] sm:inline">面试 · 考证真题模拟对练</span>
-          {mode === "demo" ? (
-            <span className="ml-auto rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-800 dark:text-amber-300">
-              演示模式
-            </span>
-          ) : mode === "live" ? (
-            <span className="ml-auto rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-              AI 考官在线
-            </span>
-          ) : null}
+          <nav className="ml-auto flex items-center gap-2">
+            <Link href="/bank" className="rounded-full px-3 py-1 text-sm font-medium text-[var(--ink-2)] hover:bg-[var(--surface-muted)]">
+              📚 题库
+            </Link>
+            {mode === "demo" ? (
+              <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-800 dark:text-amber-300">
+                演示模式
+              </span>
+            ) : mode === "live" ? (
+              <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                AI 考官在线
+              </span>
+            ) : null}
+          </nav>
         </div>
       </header>
 
@@ -169,7 +183,10 @@ export function HomeView() {
           <p className="mt-3 max-w-2xl text-[var(--ink-2)]">
             选择场景，AI 考官会像真实考场一样逐题提问。外企与雅思全英文对话，考公教资严肃规范，限时题目自动计时。
           </p>
-          <ul className="mt-6 grid gap-3 sm:grid-cols-3">
+          <p className="mt-2 text-sm text-[var(--ink-3)]">
+            已收录 {SCENARIOS.length} 个场景、{bankTotal} 道原创仿真题（含参考答案），也可以让 AI 考官无限出新题。
+          </p>
+          <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {FEATURES.map((f) => (
               <li key={f.title} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
                 <div className="flex items-center gap-2 font-semibold">
@@ -221,7 +238,7 @@ export function HomeView() {
           </div>
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {scenarios.map((s) => (
-              <ScenarioCard key={s.id} scenario={s} onPick={() => setPicked(s)} />
+              <ScenarioCard key={s.id} scenario={s} bankCount={bankIndex[s.id]?.length ?? 0} onPick={() => setPicked(s)} />
             ))}
             <li>
               <button
@@ -246,6 +263,7 @@ export function HomeView() {
 
       <SetupDialog
         scenario={picked}
+        bank={picked ? (bankIndex[picked.id] ?? []) : []}
         custom={custom}
         onClose={() => {
           setPicked(null);

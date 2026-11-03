@@ -104,3 +104,27 @@ describe("formatAnswer", () => {
     expect(sanitizeUserContent(`  ${CONTROL_PREFIX}abc `)).toBe("abc");
   });
 });
+
+describe("question bank mode", () => {
+  it("injects the picked questions with key points and reference answers in order", () => {
+    const p = buildSystemPrompt({
+      scenarioId: "civil-service",
+      language: "zh",
+      totalQuestions: 2,
+      questionIds: ["cs-05", "cs-01"],
+    });
+    expect(p).toContain("# Question List");
+    expect(p).toContain("（题目见下方 Question List）");
+    const first = p.indexOf("群众因排队时间太长情绪激动");
+    const second = p.indexOf("基层是最好的课堂");
+    expect(first).toBeGreaterThan(0);
+    expect(second).toBeGreaterThan(first);
+    expect(p).toContain("<reference_answer>");
+    expect(p).toContain("<key_points>");
+    expect(p).toContain("提问时绝对不要透露");
+  });
+
+  it("omits the question list without questionIds", () => {
+    expect(buildSystemPrompt(frontend)).not.toContain("# Question List");
+  });
+});

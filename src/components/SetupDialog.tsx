@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
+import { pickRandom } from "@/lib/bank/pick";
+import type { BankIndexItem } from "@/lib/bank/types";
+import { LIMITS } from "@/lib/limits";
 import { CUSTOM_SCENARIO_ID, type Scenario } from "@/lib/scenarios";
 import type { Lang, SessionConfig } from "@/lib/types";
-import { LIMITS } from "@/lib/validate";
 
 interface Props {
   scenario: Scenario | null;
+  /** 该场景的题库索引（自定义场景为空） */
+  bank: BankIndexItem[];
   /** 自定义场景 */
   custom: boolean;
   onClose: () => void;
@@ -15,7 +19,7 @@ interface Props {
 
 const QUESTION_OPTIONS = [3, 4, 5, 6, 8];
 
-export function SetupDialog({ scenario, custom, onClose, onStart }: Props) {
+export function SetupDialog({ scenario, bank, custom, onClose, onStart }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const open = custom || scenario !== null;
@@ -25,6 +29,15 @@ export function SetupDialog({ scenario, custom, onClose, onStart }: Props) {
   const [background, setBackground] = useState("");
   const [customTitle, setCustomTitle] = useState("");
   const [customDescription, setCustomDescription] = useState("");
+  const [source, setSource] = useState<"bank" | "ai">("bank");
+  const [typeFilter, setTypeFilter] = useState("all");
+
+  const hasBank = !custom && bank.length > 0;
+  const useBank = hasBank && source === "bank";
+  const types = useMemo(() => [...new Set(bank.map((q) => q.type))], [bank]);
+  const pool = useMemo(() => (typeFilter === "all" ? bank : bank.filter((q) => q.type === typeFilter)), [bank, typeFilter]);
+  const maxQuestions = useBank ? Math.min(pool.length, LIMITS.maxQuestions) : LIMITS.maxQuestions;
+  const effectiveQuestions = Math.max(1, Math.min(questions, maxQuestions));
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -33,6 +46,8 @@ export function SetupDialog({ scenario, custom, onClose, onStart }: Props) {
       setLanguage(scenario?.defaultLanguage ?? "zh");
       setQuestions(scenario?.defaultQuestions ?? 5);
       setBackground("");
+      setSource("bank");
+      setTypeFilter("all");
       if (custom) {
         setCustomTitle("");
         setCustomDescription("");
@@ -46,18 +61,22 @@ export function SetupDialog({ scenario, custom, onClose, onStart }: Props) {
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (custom && !customTitle.trim()) return;
+    const questionIds = useBank ? pickRandom(pool, effectiveQuestions).map((q) => q.id) : undefined;
     onStart({
       scenarioId: custom ? CUSTOM_SCENARIO_ID : scenario!.id,
       language: scenario?.languageLocked ? scenario.defaultLanguage : language,
-      totalQuestions: questions,
+      totalQuestions: questionIds ? questionIds.length : effectiveQuestions,
       ...(background.trim() ? { background: background.trim() } : {}),
       ...(custom ? { customTitle: customTitle.trim(), customDescription: customDescription.trim() || undefined } : {}),
+      ...(questionIds ? { questionIds } : {}),
     });
   };
 
-  const options = QUESTION_OPTIONS.includes(scenario?.defaultQuestions ?? 5)
+  const baseOptions = QUESTION_OPTIONS.includes(scenario?.defaultQuestions ?? 5)
     ? QUESTION_OPTIONS
     : [...QUESTION_OPTIONS, scenario!.defaultQuestions].sort((a, b) => a - b);
+  const allowed = baseOptions.filter((n) => n <= maxQuestions);
+  const options = allowed.length > 0 ? allowed : [maxQuestions];
 
   return (
     <dialog
@@ -122,6 +141,60 @@ export function SetupDialog({ scenario, custom, onClose, onStart }: Props) {
             </>
           ) : null}
 
+          {hasBank ? (
+            <fieldset>
+              <legend className="text-sm font-medium">出题方式</legend>
+              <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
+                {(
+                  [
+                    { id: "bank", title: "📚 题库抽题", text: `从 ${bank.length} 道原创仿真题中随机抽取，结束后可对照参考答案` },
+                    { id: "ai", title: "✨ AI 考官出题", text: "按场景和你的背景即兴出题，题目不重样" },
+                  ] as const
+                ).map((opt) => (
+                  <label
+                    key={opt.id}
+                    className="cursor-pointer rounded-xl border border-[var(--border)] p-3 transition has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand-500 dark:has-[:checked]:bg-brand-600/15"
+                  >
+                    <input
+                      type="radio"
+                      name="source"
+                      value={opt.id}
+                      checked={source === opt.id}
+                      onChange={() => setSource(opt.id)}
+                      className="sr-only"
+                    />
+                    <span className="block text-sm font-semibold">{opt.title}</span>
+                    <span className="mt-0.5 block text-xs text-[var(--ink-3)]">{opt.text}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          ) : null}
+
+          {useBank && types.length > 1 ? (
+            <fieldset>
+              <legend className="text-sm font-medium">题型</legend>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {["all", ...types].map((t) => (
+                  <label
+                    key={t}
+                    className="cursor-pointer rounded-full border border-[var(--border)] px-3 py-1 text-xs transition has-[:checked]:border-brand-600 has-[:checked]:bg-brand-600 has-[:checked]:text-white has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand-500"
+                  >
+                    <input
+                      type="radio"
+                      name="type"
+                      value={t}
+                      checked={typeFilter === t}
+                      onChange={() => setTypeFilter(t)}
+                      className="sr-only"
+                    />
+                    {t === "all" ? "全部题型" : t}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          ) : null}
+
           <fieldset>
             <legend className="text-sm font-medium">面试语言</legend>
             <div className="mt-1.5 inline-flex rounded-lg border border-[var(--border)] p-0.5">
@@ -163,7 +236,7 @@ export function SetupDialog({ scenario, custom, onClose, onStart }: Props) {
                     type="radio"
                     name="questions"
                     value={n}
-                    checked={questions === n}
+                    checked={effectiveQuestions === n}
                     onChange={() => setQuestions(n)}
                     className="sr-only"
                   />
@@ -171,6 +244,9 @@ export function SetupDialog({ scenario, custom, onClose, onStart }: Props) {
                 </label>
               ))}
             </div>
+            {useBank && pool.length <= LIMITS.maxQuestions ? (
+              <p className="mt-1.5 text-xs text-[var(--ink-3)]">当前题型共 {pool.length} 道题。</p>
+            ) : null}
             {scenario?.timer ? (
               <p className="mt-1.5 text-xs text-[var(--ink-3)]">
                 本场景限时：{scenario.timer.prepSeconds ? `准备 ${scenario.timer.prepSeconds} 秒，` : ""}每题作答{" "}

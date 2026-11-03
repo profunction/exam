@@ -1,6 +1,6 @@
 import type { Lang, SessionConfig } from "./types";
 
-export type ScenarioCategory = "job" | "cert" | "language" | "civil";
+export type ScenarioCategory = "job" | "cert" | "language" | "civil" | "study";
 
 export interface Scenario {
   id: string;
@@ -30,7 +30,8 @@ export const CATEGORY_LABELS: Record<ScenarioCategory, string> = {
   job: "求职面试",
   cert: "考证面试",
   language: "语言考试",
-  civil: "考公面试",
+  civil: "考公考编",
+  study: "升学面试",
 };
 
 export const SCENARIOS: Scenario[] = [
@@ -196,6 +197,109 @@ export const SCENARIOS: Scenario[] = [
       "使用让步与对比：While..., On the other hand...",
     ],
     backgroundHint: "例：目标 7 分，Part 3 容易答得太短。",
+  },
+  {
+    id: "behavioral-en",
+    title: "外企通用行为面试（HR 面）",
+    category: "job",
+    description:
+      "外资企业通用的行为面试与 HR 面，适用于各类岗位。考查自我介绍、求职动机、优缺点、团队冲突、失败经历、领导力、压力处理与薪资沟通，要求用 STAR 法则讲清具体事例。",
+    defaultLanguage: "en",
+    tone: "专业、友好、带鼓励性，像真实的外企 HR 或 Hiring Manager，会针对模糊的回答追问具体细节和结果。",
+    scoreScale: "percent",
+    defaultQuestions: 5,
+    tags: ["英文面试", "STAR", "各岗位通用"],
+    emoji: "🤝",
+    tips: [
+      "每个故事都要有具体情境、你的行动和可量化的结果。",
+      "讲失败和缺点时要真诚，并说明你如何改进。",
+      "回答「为什么来我们公司」前先研究公司产品和近期动态。",
+      "准备 2～3 个反问问题，体现你的思考。",
+    ],
+    backgroundHint: "例：3 年市场营销经验，应聘外企区域市场经理。",
+  },
+  {
+    id: "public-institution",
+    title: "事业单位结构化面试",
+    category: "civil",
+    description:
+      "事业单位公开招聘的结构化面试（含医疗、教育、文化、社区等单位）。题型包括综合分析、计划组织、应急应变、人际关系、岗位认知与自我认知，考查综合素质与岗位匹配度。",
+    defaultLanguage: "zh",
+    tone: "严肃、规范、公正，像正式考场上的主考官，用语正式，不闲聊。",
+    scoreScale: "percent",
+    defaultQuestions: 4,
+    timer: { prepSeconds: 60, answerSeconds: 180 },
+    tags: ["结构化", "思考 + 作答限时", "事业编"],
+    emoji: "🏢",
+    tips: [
+      "岗位认知题：结合报考单位的公益服务属性来答。",
+      "计划组织题：目的 → 准备 → 实施 → 总结，突出细节和亮点。",
+      "应急应变题：先控制局面、保障安全，再解决问题、事后反思。",
+      "人际关系题：摆正心态、主动沟通，以工作大局为重。",
+    ],
+    backgroundHint: "例：报考市人民医院行政岗，公共事业管理专业应届生。",
+  },
+  {
+    id: "grad-retest",
+    title: "考研复试面试",
+    category: "study",
+    description:
+      "硕士研究生复试面试：英文自我介绍、英语口语问答、专业与科研经历、报考动机与研究规划、学术道德与综合素质，由导师组提问。",
+    defaultLanguage: "zh",
+    tone: "严谨但友善，像研究生复试的导师组，会围绕考生的科研经历和专业基础追问细节。",
+    scoreScale: "percent",
+    defaultQuestions: 5,
+    tags: ["中英混合", "科研经历", "导师组面试"],
+    emoji: "🎓",
+    tips: [
+      "英文自我介绍控制在 1～2 分钟，突出与报考专业相关的经历。",
+      "介绍毕业设计时，讲清自己的具体工作，而不是团队做了什么。",
+      "遇到不会的问题，诚实说明，再讲自己的思考思路。",
+      "提前了解报考学院导师的研究方向。",
+    ],
+    backgroundHint: "例：报考某高校计算机专业学硕，本科做过图像识别项目。",
+  },
+  {
+    id: "bank-soe",
+    title: "银行 / 国企校招面试",
+    category: "job",
+    description:
+      "银行、国有企业的校园招聘面试（以半结构化面试为主）。考查自我介绍、求职动机、职业规划、营销与客户服务情景、团队协作、风险合规意识与抗压能力。",
+    defaultLanguage: "zh",
+    tone: "正式、稳重，像银行或国企的人力资源面试官，会通过追问考察求职动机的真实性和岗位匹配度。",
+    scoreScale: "percent",
+    defaultQuestions: 5,
+    tags: ["校招", "情景模拟", "营销服务"],
+    emoji: "🏦",
+    tips: [
+      "求职动机要具体：了解应聘银行或企业的特色业务和战略。",
+      "情景题要体现客户至上和风险合规意识。",
+      "营销模拟先了解客户需求，再介绍产品，不要硬推。",
+      "压力面试题保持冷静，用事实证明自己。",
+    ],
+    backgroundHint: "例：金融学应届生，应聘国有大行管培生，有支行实习经历。",
+  },
+  {
+    id: "cet-speaking",
+    title: "大学英语四六级口语",
+    category: "language",
+    description:
+      "按全国大学英语四、六级口语考试（CET-SET）的形式练习：自我介绍与简短问答、个人陈述（准备后限时陈述）、观点讨论。考查语言准确性、流利度与内容连贯性。",
+    defaultLanguage: "en",
+    languageLocked: true,
+    tone: "中立、规范，像四六级口语考试的考官，按考试流程推进，严格控制时间。",
+    scoreScale: "percent",
+    defaultQuestions: 4,
+    timer: { prepSeconds: 45, answerSeconds: 60 },
+    tags: ["四六级", "个人陈述", "限时 1 分钟"],
+    emoji: "📢",
+    tips: [
+      "个人陈述用「观点 → 理由一 → 理由二 → 结论」的结构。",
+      "多用 first / besides / however / in conclusion 等连接词。",
+      "宁可句子简单，也要保证语法正确、发音清晰。",
+      "讨论题注意回应对方：I see your point, but…",
+    ],
+    backgroundHint: "例：准备四级口语，英语基础一般，开口容易紧张。",
   },
 ];
 
